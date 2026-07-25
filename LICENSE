@@ -1,0 +1,75 @@
+# NetFormosa Transportation Designer Source-Available License
+
+Copyright (c) 2026 NFDesigner. All rights reserved.
+
+This License Agreement (the "Agreement") applies to this software project, including but not limited to source code, compiled binaries, documentation, interface designs, and associated assets (hereinafter referred to as the "Software").
+
+By downloading, installing, copying, modifying, or using the Software, you agree to be bound by the terms and conditions of this Agreement. If you do not agree to these terms, do not use, access, or modify the Software.
+
+---
+
+## 1. Grant of License
+
+Subject to your full compliance with all terms and conditions of this Agreement, the Copyright Holder grants you a non-exclusive, worldwide, non-transferable, non-sublicensable, royalty-free license to:
+
+1. **Access and View**: Read and inspect the source code of the Software.
+2. **Non-Commercial Modification**: Modify the source code of the Software strictly for personal learning, research, or non-commercial purposes.
+3. **Non-Commercial Distribution**: Distribute the Software and your modifications solely under the Strong Copyleft terms specified in Section 2.
+
+---
+
+## 2. Strong Copyleft and Share-Alike
+
+If you distribute, publish, host, or publicly convey the Software or any Derivative Works thereof:
+
+1. **Source Code Disclosure**: You must make the complete source code of the Derivative Works publicly available under terms identical to this Agreement.
+2. **Identical Licensing Requirement**: Any Derivative Works must be licensed strictly under this Agreement (including all Non-Commercial, Non-Compete, and Copyleft restrictions) without adding any further restrictions or waiving any terms.
+3. **Copyright Notice**: You must retain all original copyright, patent, trademark, and attribution notices from the Software in all copies or Derivative Works.
+
+---
+
+## 3. Non-Commercial Restrictions
+
+The Software is **strictly prohibited from being used for commercial purposes**. Without obtaining an explicit written Commercial License from the Copyright Holder, the following actions constitute a direct breach of this Agreement:
+
+1. **Commercial Sale and Rental**: Selling, renting, licensing, or directly monetizing the Software or any of its Derivative Works.
+2. **Commercial Services (SaaS / PaaS / API)**: Hosting, deploying, or offering the Software or its Derivative Works as a cloud service, paid service, managed service, subscription tool, or API for third parties.
+3. **Internal Commercial Operation**: Use of the Software by any commercial entity, company, or enterprise for internal business operations, commercial productivity, marketing, or revenue-generating activities.
+4. **Ad-Supported and Indirect Monetization**: Embedding advertisements, promotional material, or collecting indirect fees/subsidies in connection with the Software or its Derivative Works.
+
+---
+
+## 4. Non-Compete Clause
+
+To protect the core functionality and value of the Software, whether for-profit or non-profit, you **shall not** use the Software or its Derivative Works to:
+
+1. **Competitive Products/Services**: Develop, offer, host, or maintain any public service, website, or application that provides identical, substantially similar, or directly competing functionality to NetFormosa Transportation Designer (or services operated by the Copyright Holder based on the Software).
+2. **Market Replacement**: Offer or distribute alternative versions intended to replace or compete with the target market positioning of this project.
+
+---
+
+## 5. Dual-Licensing Model
+
+1. **Commercial and Proprietary Licensing**: This Agreement strictly applies to non-commercial and permitted uses. If you or your organization wish to use the Software for:
+   - Commercial monetization or internal enterprise deployment
+   - Exemption from Strong Copyleft (source code disclosure) obligations
+   - Relief from the Non-Compete restrictions
+   - Customized licensing terms or technical support
+   
+   You must obtain a separate, explicit **Commercial License** from the Copyright Holder prior to such use.
+
+2. **Commercial Licensing Contact**:
+   - Licensing Enquiries: [Insert Contact Email / Website]
+
+---
+
+## 6. Disclaimer of Warranty & Limitation of Liability
+
+1. **Disclaimer of Warranty**: THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+2. **Limitation of Liability**: IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+## 7. Termination
+
+Your rights under this Agreement will automatically terminate immediately if you breach any term or condition herein (e.g., unauthorized commercial use or failure to provide source code under Copyleft). Upon termination, you must immediately cease all use of the Software and destroy all copies, complete or partial, of the Software and any Derivative Works.
