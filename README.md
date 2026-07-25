@@ -1,1 +1,1 @@
-[![splash](/.github/assets/splash.png)]
+![splash](/.github/assets/splash.png)
