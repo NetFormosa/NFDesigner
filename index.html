@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NFDesigner by NetFormosa</title>
+  <meta name="description" content="專業捷運路線圖視覺化設計工具，支援路線繪製、車站編輯、雙語標籤、OSM 底圖與多格式匯出。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css?v=3" />
+</head>
+
+<body>
+
+  <!-- ── Access Code Gate ── -->
+  <div id="auth-overlay" style="
+    position:fixed; inset:0; z-index:99999;
+    display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+  ">
+    <!-- Grid background -->
+    <div style="
+      position:absolute; inset:0; pointer-events:none;
+      background-image: linear-gradient(rgba(74,158,255,0.04) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(74,158,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+    "></div>
+
+    <!-- Card -->
+    <div style="
+      position:relative; z-index:1;
+      width: min(420px, calc(100vw - 40px));
+      background: rgba(22,27,34,0.9);
+      border: 1px solid rgba(74,158,255,0.2);
+      border-radius: 20px;
+      padding: 40px 36px 36px;
+      box-shadow: 0 0 80px rgba(74,158,255,0.08), 0 32px 64px rgba(0,0,0,0.6);
+      backdrop-filter: blur(24px);
+      animation: authCardIn 0.5s cubic-bezier(.22,.68,0,1.2) both;
+    ">
+      <!-- Logo -->
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:28px;">
+        <img src="assets/icon.png" width="36" height="36" alt="logo"
+          style="border-radius:8px; box-shadow: 0 0 16px rgba(74,158,255,0.4);" />
+        <div>
+          <div style="font-size:16px; font-weight:700; color:#e6edf3; letter-spacing:-.3px;">NFDesigner</div>
+          <div style="font-size:11px; color:#6e7681; margin-top:1px;">by NetFormosa</div>
+        </div>
+        <div style="
+          margin-left:auto;
+          background: rgba(74,158,255,0.1);
+          border: 1px solid rgba(74,158,255,0.2);
+          border-radius:6px;
+          padding: 2px 8px;
+          font-size:10px; font-weight:600; color:#4a9eff;
+          letter-spacing:.5px;
+        ">v0.0.3.1 dev</div>
+      </div>
+
+      <div style="font-size:20px; font-weight:700; color:#e6edf3; margin-bottom:6px;">存取驗證</div>
+      <div style="font-size:13px; color:#8b949e; margin-bottom:28px; line-height:1.5;">
+        此為開發版本，請輸入存取代碼以繼續使用。
+      </div>
+
+      <!-- Input -->
+      <div style="position:relative; margin-bottom:16px;">
+        <input
+          id="auth-input"
+          type="password"
+          placeholder="輸入存取代碼"
+          autocomplete="off"
+          style="
+            width:100%; box-sizing:border-box;
+            padding: 13px 46px 13px 16px;
+            background: rgba(13,17,23,0.8);
+            border: 1.5px solid rgba(74,158,255,0.2);
+            border-radius: 12px;
+            color: #e6edf3;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+          "
+          oninput="authInputChange()"
+          onkeydown="if(event.key==='Enter') authSubmit()"
+        />
+        <!-- Eye toggle -->
+        <button onclick="authToggleEye()" style="
+          position:absolute; right:14px; top:50%; transform:translateY(-50%);
+          background:none; border:none; cursor:pointer; color:#6e7681; padding:4px;
+          display:flex; align-items:center;
+        " id="auth-eye-btn">
+          <svg id="auth-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Error msg -->
+      <div id="auth-error" style="
+        display:none; margin-bottom:14px;
+        color:#f85149; font-size:12px; font-weight:500;
+        display:flex; align-items:center; gap:6px;
+      ">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        存取代碼不正確，請再試一次
+      </div>
+
+      <!-- Button -->
+      <button id="auth-btn" onclick="authSubmit()" style="
+        width:100%; padding:13px;
+        background: linear-gradient(135deg, #1f6feb, #388bfd);
+        border:none; border-radius:12px;
+        color:#fff; font-size:14px; font-weight:600;
+        font-family:inherit; cursor:pointer;
+        transition: opacity .2s, transform .1s, box-shadow .2s;
+        box-shadow: 0 4px 20px rgba(56,139,253,0.3);
+        letter-spacing:.2px;
+      "
+      onmouseover="this.style.opacity='.9'"
+      onmouseout="this.style.opacity='1'"
+      onmousedown="this.style.transform='scale(.98)'"
+      onmouseup="this.style.transform='scale(1)'"
+      >驗證存取代碼</button>
+    </div>
+
+    <!-- Success overlay (hidden) -->
+    <div id="auth-success" style="
+      display:none; position:absolute; inset:0;
+      align-items:center; justify-content:center;
+      flex-direction:column; gap:16px;
+      background: radial-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+    ">
+      <div style="
+        width:72px; height:72px; border-radius:50%;
+        background: rgba(46,160,67,0.15);
+        border: 2px solid rgba(46,160,67,0.4);
+        display:flex; align-items:center; justify-content:center;
+        animation: authPulse 0.5s ease-out both;
+      ">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2ea043" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div style="font-size:18px; font-weight:700; color:#e6edf3;">已完成驗證</div>
+      <div style="font-size:13px; color:#8b949e;">正在載入 NFDesigner…</div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes authCardIn {
+      from { opacity:0; transform: translateY(24px) scale(.97); }
+      to   { opacity:1; transform: translateY(0)    scale(1);   }
+    }
+    @keyframes authPulse {
+      from { transform: scale(0.5); opacity:0; }
+      to   { transform: scale(1);   opacity:1; }
+    }
+    #auth-input:focus {
+      border-color: rgba(74,158,255,0.5) !important;
+      box-shadow: 0 0 0 3px rgba(74,158,255,0.12) !important;
+    }
+  </style>
+
+  <script>
+    (function() {
+      const ACCESS_CODE = 'pritest07';
+      const STORAGE_KEY = 'nfd-auth-v1';
+
+      // Already verified → hide immediately
+      if (localStorage.getItem(STORAGE_KEY) === '1') {
+        document.getElementById('auth-overlay').style.display = 'none';
+        return;
+      }
+
+      window.authInputChange = function() {
+        document.getElementById('auth-error').style.display = 'none';
+        const input = document.getElementById('auth-input');
+        input.style.borderColor = 'rgba(74,158,255,0.2)';
+      };
+
+      window.authToggleEye = function() {
+        const inp = document.getElementById('auth-input');
+        const icon = document.getElementById('auth-eye-icon');
+        if (inp.type === 'password') {
+          inp.type = 'text';
+          icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>`;
+        } else {
+          inp.type = 'password';
+          icon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+        }
+      };
+
+      window.authSubmit = function() {
+        const val = document.getElementById('auth-input').value;
+        if (val === ACCESS_CODE) {
+          localStorage.setItem(STORAGE_KEY, '1');
+          // Show success animation
+          const card = document.querySelector('#auth-overlay > div:not([id])');
+          if (card) card.style.display = 'none';
+          const success = document.getElementById('auth-success');
+          success.style.display = 'flex';
+          setTimeout(() => {
+            document.getElementById('auth-overlay').style.opacity = '0';
+            document.getElementById('auth-overlay').style.transition = 'opacity .4s';
+            setTimeout(() => {
+              document.getElementById('auth-overlay').style.display = 'none';
+            }, 400);
+          }, 1200);
+        } else {
+          const input = document.getElementById('auth-input');
+          input.style.borderColor = 'rgba(248,81,73,0.5)';
+          const err = document.getElementById('auth-error');
+          err.style.display = 'flex';
+          // Shake
+          input.style.animation = 'none';
+          input.offsetHeight;
+          input.style.animation = 'authShake .35s ease';
+        }
+      };
+    })();
+  </script>
+  <style>
+    @keyframes authShake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-6px)}
+      40%{transform:translateX(6px)}
+      60%{transform:translateX(-4px)}
+      80%{transform:translateX(4px)}
+    }
+  </style>
+
+  <!-- Top Menu Bar -->
+  <header id="menu-bar" role="banner">
+    <div class="menu-left">
+      <div class="app-logo">
+        <img src="assets/icon.png" width="20" height="20" alt="logo" />
+        <span class="app-name">NFDesigner</span>
+        <span class="app-by">by NetFormosa</span>
+      </div>
+      <nav class="menu-nav" role="navigation" aria-label="主選單">
+        <button class="menu-btn" id="menu-file" aria-haspopup="true">檔案</button>
+        <button class="menu-btn" id="menu-edit" aria-haspopup="true">編輯</button>
+        <button class="menu-btn" id="menu-view" aria-haspopup="true">檢視</button>
+        <button class="menu-btn" id="menu-layer" aria-haspopup="true">圖層</button>
+        <button class="menu-btn" id="menu-export" aria-haspopup="true">匯出</button>
+        <button class="menu-btn" id="menu-manage" aria-haspopup="true">管理</button>
+        <button class="menu-btn" id="menu-help" aria-haspopup="true">說明</button>
+      </nav>
+    </div>
+    <div class="menu-center">
+      <span id="project-name-display" class="project-name">未命名專案</span>
+    </div>
+    <div class="menu-right">
+      <button class="btn-icon" id="btn-open-manager" title="站點 &amp; 路線管理" aria-label="管理站點與路線"
+        style="position:relative;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 6h16M4 10h16M4 14h10" />
+        </svg>
+      </button>
+      <button class="btn-icon" id="btn-undo" title="復原 (Ctrl+Z)" aria-label="復原">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v6h6" />
+          <path d="M3 13a9 9 0 1 0 2.1-5.4" />
+        </svg>
+      </button>
+      <button class="btn-icon" id="btn-redo" title="重做 (Ctrl+Shift+Z)" aria-label="重做">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 7v6h-6" />
+          <path d="M21 13a9 9 0 1 1-2.1-5.4" />
+        </svg>
+      </button>
+      <div class="divider-v"></div>
+      <a class="btn-icon" id="btn-github" href="https://github.com/NetFormosa/NFDesigner" target="_blank"
+        title="GitHub 原始碼" aria-label="GitHub">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+          </path>
+        </svg>
+      </a>
+      <button class="btn-primary" id="btn-save" title="儲存 (Ctrl+S)">儲存</button>
+      <button class="btn-secondary" id="btn-export-quick">匯出</button>
+    </div>
+  </header>
+
+  <!-- =====================================
+       MOBILE UI (hidden on desktop)
+       ===================================== -->
+  <header id="mobile-topbar">
+    <div class="mob-topbar-left">
+      <button class="mob-topbar-btn" id="mob-btn-menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M3 6h18M3 18h18" />
+        </svg>
+      </button>
+      <div class="mob-logo">
+        <img src="assets/icon.png" width="20" height="20" alt="logo" />
+        <div style="display:flex; flex-direction:column;">
+          <span class="mob-logo-name">NFDesigner</span>
+        </div>
+      </div>
+    </div>
+    <div class="mob-topbar-center">
+      <span class="mob-project-name" id="mob-project-name">未命名專案</span>
+    </div>
+    <div class="mob-topbar-right">
+      <button class="mob-topbar-btn mob-btn-save" id="mob-btn-save">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+          <polyline points="17 21 17 13 7 13 7 21" />
+          <polyline points="7 3 7 8 15 8" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="mobile-tool-strip">
+    <button class="mob-tool active" id="mob-tool-select" data-tool="select">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+      </svg>
+      <span>選取</span>
+    </button>
+    <div class="mob-tool-sep"></div>
+    <button class="mob-tool" id="mob-tool-station" data-tool="station">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      <span>車站</span>
+    </button>
+    <button class="mob-tool" id="mob-tool-line" data-tool="line">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 19L19 5" />
+      </svg>
+      <span>路線</span>
+    </button>
+    <button class="mob-tool" id="mob-tool-label" data-tool="label">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+      </svg>
+      <span>文字</span>
+    </button>
+  </div>
+
+  <nav id="mobile-navbar">
+    <button class="mob-nav-btn active" id="mob-nav-canvas" data-panel="none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      </svg>
+      <span>畫布</span>
+    </button>
+    <button class="mob-nav-btn" id="mob-nav-props" data-panel="props">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3" />
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+      <span>屬性</span>
+    </button>
+    <button class="mob-nav-btn" id="mob-nav-layers" data-panel="layers">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+        <polyline points="2 17 12 22 22 17" />
+        <polyline points="2 12 12 17 22 12" />
+      </svg>
+      <span>圖層</span>
+    </button>
+    <button class="mob-nav-btn" id="mob-nav-manage" data-panel="manage">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 6h16M4 10h16M4 14h10" />
+      </svg>
+      <span>管理</span>
+    </button>
+    <button class="mob-nav-btn" id="mob-nav-more" data-panel="more">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="19" cy="12" r="1" />
+        <circle cx="5" cy="12" r="1" />
+      </svg>
+      <span>更多</span>
+    </button>
+  </nav>
+
+  <div class="mob-drawer-backdrop" id="mob-drawer-backdrop"></div>
+
+  <!-- Left Drawer: Menu -->
+  <div class="mob-drawer mob-drawer-left" id="mob-drawer-menu">
+    <div class="mob-drawer-header">
+      <div class="mob-menu-brand">
+        <img src="assets/icon.png" width="28" height="28" alt="logo" />
+        <div>
+          <div class="mob-menu-brand-name">NFDesigner</div>
+          <div class="mob-menu-brand-sub">by NetFormosa</div>
+        </div>
+      </div>
+      <button class="mob-drawer-close" id="mob-menu-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg></button>
+    </div>
+    <div class="mob-drawer-body mob-menu-body">
+      <div class="mob-menu-project-card">
+        <div class="mob-menu-project-label">目前專案</div>
+        <div class="mob-menu-project-name" id="mob-menu-project-name">未命名專案</div>
+      </div>
+      <div class="mob-menu-nav">
+        <button class="mob-menu-nav-item" id="mob-menu-new"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg> 新增專案</button>
+        <button class="mob-menu-nav-item" id="mob-menu-open"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4" />
+          </svg> 開啟專案 (.metro)</button>
+        <button class="mob-menu-nav-item" id="mob-menu-save-as"><svg width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+          </svg> 另存新檔</button>
+        <button class="mob-menu-nav-item" id="mob-menu-github"><svg width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+          </svg> GitHub</button>
+      </div>
+      <div class="mob-menu-sep"></div>
+      <div class="mob-theme-section">
+        <div class="mob-menu-section-title">主題色彩</div>
+        <div class="mob-theme-grid">
+          <button class="mob-theme-chip active" data-theme="dark">深色</button>
+          <button class="mob-theme-chip" data-theme="light">淺色</button>
+          <button class="mob-theme-chip" data-theme="dracula">Dracula</button>
+          <button class="mob-theme-chip" data-theme="nord">Nord</button>
+          <button class="mob-theme-chip" data-theme="solarized-dark">Solarized</button>
+          <button class="mob-theme-chip" data-theme="monokai">Monokai</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Drawer: Layers -->
+  <div class="mob-drawer" id="mob-drawer-layers">
+    <div class="mob-drawer-handle"></div>
+    <div class="mob-drawer-header">
+      <h3 class="mob-drawer-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+        圖層
+      </h3>
+      <button class="mob-drawer-close" id="mob-layers-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg></button>
+    </div>
+    <div class="mob-drawer-body">
+      <div class="mob-layer-list" id="mob-layer-list">
+          <div class="mob-layer-item" data-layer="labels">
+            <div class="mob-layer-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6h16M4 10h16M4 14h10" />
+              </svg>
+            </div>
+            <span class="mob-layer-name">文字標籤</span>
+            <button class="layer-vis-btn" data-layer="labels" aria-label="切換文字標籤可見度">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <div class="mob-layer-item" data-layer="icons">
+            <div class="mob-layer-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+            </div>
+            <span class="mob-layer-name">圖示標記</span>
+            <button class="layer-vis-btn" data-layer="icons" aria-label="切換圖示標記可見度">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <div class="mob-layer-item" data-layer="stations">
+            <div class="mob-layer-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="7" />
+                <circle cx="12" cy="12" r="3" fill="currentColor" />
+              </svg>
+            </div>
+            <span class="mob-layer-name">車站</span>
+            <button class="layer-vis-btn" data-layer="stations" aria-label="切換車站可見度">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <div class="mob-layer-item" data-layer="lines">
+            <div class="mob-layer-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="4" cy="12" r="2" fill="currentColor" />
+                <line x1="6" y1="12" x2="18" y2="12" />
+                <circle cx="20" cy="12" r="2" fill="currentColor" />
+              </svg>
+            </div>
+            <span class="mob-layer-name">捷運路線</span>
+            <button class="layer-vis-btn" data-layer="lines" aria-label="切換捷運路線可見度">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Bottom Drawer: Properties -->
+  <div class="mob-drawer" id="mob-drawer-props">
+    <div class="mob-drawer-handle"></div>
+    <div class="mob-drawer-header">
+      <h3 class="mob-drawer-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+        屬性
+      </h3>
+      <button class="mob-drawer-close" id="mob-props-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg></button>
+    </div>
+    <div class="mob-drawer-body" id="mob-props-body">
+      <div class="mob-drawer-mirror-notice">請在畫布上選擇物件以編輯屬性</div>
+    </div>
+  </div>
+
+  <!-- Bottom Drawer: More -->
+  <div class="mob-drawer" id="mob-drawer-more">
+    <div class="mob-drawer-handle"></div>
+    <div class="mob-drawer-header">
+      <h3 class="mob-drawer-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="1" />
+          <circle cx="19" cy="12" r="1" />
+          <circle cx="5" cy="12" r="1" />
+        </svg>
+        更多操作
+      </h3>
+      <button class="mob-drawer-close" id="mob-more-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg></button>
+    </div>
+    <div class="mob-drawer-body">
+      <div class="mob-more-section">
+        <div class="mob-more-section-title">編輯</div>
+        <div class="mob-more-grid">
+          <button class="mob-more-item" id="mob-more-undo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M3 7v6h6" />
+              <path d="M3 13a9 9 0 1 0 2.1-5.4" />
+            </svg><span>復原</span></button>
+          <button class="mob-more-item" id="mob-more-redo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M21 7v6h-6" />
+              <path d="M21 13a9 9 0 1 1-2.1-5.4" />
+            </svg><span>重做</span></button>
+          <button class="mob-more-item" id="mob-more-copy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg><span>複製</span></button>
+          <button class="mob-more-item" id="mob-more-paste"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            </svg><span>貼上</span></button>
+          <button class="mob-more-item" id="mob-more-delete" style="color:var(--danger);"><svg width="24" height="24"
+              viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg><span style="color:var(--danger);">刪除</span></button>
+          
+        </div>
+      </div>
+      <div class="mob-more-section">
+        <div class="mob-more-section-title">視圖</div>
+        <div class="mob-more-grid">
+          <button class="mob-more-item" id="mob-more-grid"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <path d="M3 9h18" />
+              <path d="M3 15h18" />
+              <path d="M9 3v18" />
+              <path d="M15 3v18" />
+            </svg><span>切換格線</span></button>
+          <button class="mob-more-item" id="mob-more-snap"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+            </svg><span>對齊網格</span></button>
+          <button class="mob-more-item" id="mob-more-fit"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M4 14l6-6 20 20" />
+              <path d="M14 4l6 6-20-20" />
+            </svg><span>符合視窗</span></button>
+        </div>
+        <div class="mob-zoom-strip">
+          <button class="mob-zoom-btn" id="mob-zoom-out">-</button>
+          <div class="mob-zoom-bar-track">
+            <div class="mob-zoom-bar-fill" id="mob-zoom-fill" style="width: 50%;"></div>
+          </div>
+          <button class="mob-zoom-btn" id="mob-zoom-in">+</button>
+          <span class="mob-zoom-label" id="mob-zoom-label">100%</span>
+        </div>
+      </div>
+      <div class="mob-more-section">
+        <div class="mob-more-section-title">匯出</div>
+        <div class="mob-more-grid">
+          <button class="mob-more-item" id="mob-more-export-png"><svg width="24" height="24" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg><span>PNG</span></button>
+          <button class="mob-more-item" id="mob-more-export-svg"><svg width="24" height="24" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
+            </svg><span>SVG</span></button>
+          <button class="mob-more-item" id="mob-more-export-pdf"><svg width="24" height="24" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg><span>PDF</span></button>
+          <button class="mob-more-item" id="mob-more-export-webp"><svg width="24" height="24" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg><span>WebP</span></button>
+          <button class="mob-more-item" id="mob-more-export-json"><svg width="24" height="24" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <path d="M10 13h4M10 17h4M12 11v8" />
+            </svg><span>JSON</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dropdown Menus -->
+  <div id="dropdown-overlay" class="dropdown-overlay"></div>
+  <div id="dropdown-file" class="dropdown-menu" role="menu">
+    <button class="dropdown-item" id="dd-new" role="menuitem">新增專案</button>
+    <button class="dropdown-item" id="dd-open" role="menuitem">開啟專案 (.metro)</button>
+    <button class="dropdown-item" id="dd-save-as" role="menuitem">另存新檔</button>
+  </div>
+  <div id="dropdown-edit" class="dropdown-menu" role="menu">
+    <button class="dropdown-item" id="dd-undo" role="menuitem"><span>復原</span><kbd>Ctrl+Z</kbd></button>
+    <button class="dropdown-item" id="dd-redo" role="menuitem"><span>重做</span><kbd>Ctrl+⇧+Z</kbd></button>
+    <div class="dropdown-sep"></div>
+    <button class="dropdown-item" id="dd-copy" role="menuitem"><span>複製</span><kbd>Ctrl+C</kbd></button>
+    <button class="dropdown-item" id="dd-paste" role="menuitem"><span>貼上</span><kbd>Ctrl+V</kbd></button>
+    <button class="dropdown-item" id="dd-delete" role="menuitem"><span>刪除</span><kbd>Del</kbd></button>
+    <div class="dropdown-sep"></div>
+    <button class="dropdown-item" id="dd-select-all" role="menuitem"><span>全選</span><kbd>Ctrl+A</kbd></button>
+    <button class="dropdown-item" id="dd-group" role="menuitem"><span>群組</span><kbd>Ctrl+G</kbd></button>
+    <div class="dropdown-sep"></div>
+    <button class="dropdown-item toggle-item" id="dd-toggle-snap-grid" role="menuitem">
+      <span>對齊格線</span><span class="toggle-check" id="snap-grid-check">✓</span>
+    </button>
+  </div>
+  <div id="dropdown-view" class="dropdown-menu" role="menu">
+    <button class="dropdown-item" id="dd-zoom-in" role="menuitem"><span>放大</span><kbd>+</kbd></button>
+    <button class="dropdown-item" id="dd-zoom-out" role="menuitem"><span>縮小</span><kbd>-</kbd></button>
+    <button class="dropdown-item" id="dd-zoom-fit" role="menuitem"><span>符合視窗</span><kbd>Ctrl+0</kbd></button>
+    <button class="dropdown-item" id="dd-zoom-100" role="menuitem"><span>100%</span><kbd>Ctrl+1</kbd></button>
+    <div class="dropdown-sep"></div>
+    <button class="dropdown-item toggle-item" id="dd-toggle-grid" role="menuitem">
+      <span>顯示格線</span><span class="toggle-check" id="grid-check">✓</span>
+    </button>
+    <div class="dropdown-sep"></div>
+    <div style="padding: 4px 10px; font-size: 11px; color: var(--text-muted); font-weight: 600;">主題</div>
+    <button class="dropdown-item toggle-item" id="dd-theme-dark" data-theme-id="dark" role="menuitem">
+      <span>深色 (預設)</span><span class="toggle-check" id="theme-dark-check">✓</span>
+    </button>
+    <button class="dropdown-item toggle-item" id="dd-theme-light" data-theme-id="light" role="menuitem">
+      <span>淺色</span><span class="toggle-check hidden" id="theme-light-check">✓</span>
+    </button>
+    <button class="dropdown-item toggle-item" id="dd-theme-dracula" data-theme-id="dracula" role="menuitem">
+      <span>Dracula</span><span class="toggle-check hidden" id="theme-dracula-check">✓</span>
+    </button>
+    <button class="dropdown-item toggle-item" id="dd-theme-nord" data-theme-id="nord" role="menuitem">
+      <span>Nord</span><span class="toggle-check hidden" id="theme-nord-check">✓</span>
+    </button>
+    <button class="dropdown-item toggle-item" id="dd-theme-solarized-dark" data-theme-id="solarized-dark"
+      role="menuitem">
+      <span>Solarized Dark</span><span class="toggle-check hidden" id="theme-solarized-dark-check">✓</span>
+    </button>
+    <button class="dropdown-item toggle-item" id="dd-theme-monokai" data-theme-id="monokai" role="menuitem">
+      <span>Monokai</span><span class="toggle-check hidden" id="theme-monokai-check">✓</span>
+    </button>
+  </div>
+  <div id="dropdown-export" class="dropdown-menu" role="menu">
+    <button class="dropdown-item" id="dd-export-svg" role="menuitem">匯出為 SVG</button>
+    <button class="dropdown-item" id="dd-export-png" role="menuitem">匯出為 PNG</button>
+    <button class="dropdown-item" id="dd-export-webp" role="menuitem">匯出為 WebP</button>
+    <button class="dropdown-item" id="dd-export-pdf" role="menuitem">匯出為 PDF</button>
+    <div class="dropdown-sep"></div>
+    <button class="dropdown-item" id="dd-export-json" role="menuitem">匯出為 JSON</button>
+  </div>
+  <div id="dropdown-layer" class="dropdown-menu" role="menu">
+    <button class="dropdown-item" id="dd-layer-panel" role="menuitem">顯示右側面板</button>
+  </div>
+  <div id="dropdown-help" class="dropdown-menu" role="menu">
+    <button class="dropdown-item" id="dd-about" role="menuitem">關於 NFDesigner</button>
+  </div>
+  <div id="dropdown-manage" class="dropdown-menu" role="menu">
+    <button class="dropdown-item" id="dd-manage-stations" role="menuitem">
+      <span>管理車站</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="7" />
+        <circle cx="12" cy="12" r="3" fill="currentColor" />
+      </svg>
+    </button>
+    <button class="dropdown-item" id="dd-manage-lines" role="menuitem">
+      <span>管理路線</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="4" cy="12" r="2.5" fill="currentColor" />
+        <line x1="6.5" y1="12" x2="17.5" y2="12" />
+        <circle cx="20" cy="12" r="2.5" fill="currentColor" />
+      </svg>
+    </button>
+    <div class="dropdown-sep"></div>
+    <button class="dropdown-item" id="dd-manage-all" role="menuitem">開啟管理視窗</button>
+  </div>
+
+  <!-- Main App Area -->
+  <div id="app-body">
+    <!-- Left Toolbar -->
+    <aside id="toolbar" role="toolbar" aria-label="繪圖工具列">
+      <div class="tool-group">
+        <button class="tool-btn active" id="tool-select" data-tool="select" title="選取工具 (V)" aria-label="選取工具">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 2l16 9-9 2-5 8z" />
+          </svg>
+        </button>
+      </div>
+      <div class="tool-sep"></div>
+      <div class="tool-group">
+        <button class="tool-btn" id="tool-station" data-tool="station" title="車站工具 (S)" aria-label="車站工具">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="7" />
+            <circle cx="12" cy="12" r="3" fill="currentColor" />
+          </svg>
+        </button>
+        <button class="tool-btn" id="tool-line" data-tool="line" title="路線工具 (L)" aria-label="路線工具">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="4" cy="12" r="2.5" fill="currentColor" />
+            <circle cx="20" cy="12" r="2.5" fill="currentColor" />
+            <line x1="6.5" y1="12" x2="17.5" y2="12" stroke="currentColor" />
+          </svg>
+        </button>
+        <button class="tool-btn" id="tool-text" data-tool="text" title="文字工具 (T)" aria-label="文字工具">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 6V4h16v2h-6v14h-4V6z" />
+          </svg>
+        </button>
+      </div>
+      <div class="tool-sep"></div>
+      <div class="tool-group">
+        <button class="tool-btn" id="tool-pan" data-tool="pan" title="平移工具 (Space)" aria-label="平移工具">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+      </div>
+      <div class="tool-sep"></div>
+      <div class="tool-group">
+        <button class="tool-btn" id="tool-zoom-in" title="放大 (+)" aria-label="放大">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <line x1="11" y1="8" x2="11" y2="14" />
+            <line x1="8" y1="11" x2="14" y2="11" />
+          </svg>
+        </button>
+        <button class="tool-btn" id="tool-zoom-out" title="縮小 (-)" aria-label="縮小">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <line x1="8" y1="11" x2="14" y2="11" />
+          </svg>
+        </button>
+      </div>
+      <div style="flex:1"></div>
+      <div class="tool-group">
+        <button class="tool-btn" id="btn-zoom-fit-tool" title="符合視窗 (Ctrl+0)" aria-label="符合視窗">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7V3h4M17 3h4v4M3 17v4h4M17 21h4v-4" />
+            <rect x="7" y="7" width="10" height="10" rx="1" />
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Canvas Area -->
+    <main id="canvas-container" role="main" aria-label="編輯畫布">
+      <svg id="main-canvas" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+        <defs>
+          <pattern id="grid-small" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" style="stroke: var(--grid-small);" stroke-width="0.75"
+              vector-effect="non-scaling-stroke" />
+          </pattern>
+          <pattern id="grid-large" width="100" height="100" patternUnits="userSpaceOnUse">
+            <rect width="100" height="100" fill="url(#grid-small)" />
+            <path d="M 100 0 L 0 0 0 100" fill="none" style="stroke: var(--grid-large);" stroke-width="1.25"
+              vector-effect="non-scaling-stroke" />
+          </pattern>
+          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" style="fill: var(--accent);" />
+          </marker>
+        </defs>
+
+        <!-- Transform Group (pan/zoom) -->
+        <g id="canvas-transform">
+          <!-- Grid Layer -->
+          <g id="layer-grid">
+            <rect id="grid-bg" width="99999" height="99999" x="-49999" y="-49999" style="fill: var(--bg-canvas);" />
+            <rect id="grid-lines" width="99999" height="99999" x="-49999" y="-49999" fill="url(#grid-large)" />
+          </g>
+          <!-- Metro Lines Layer -->
+          <g id="layer-lines" data-layer="lines"></g>
+          <!-- Stations Layer -->
+          <g id="layer-stations" data-layer="stations"></g>
+          <!-- Icons & Markers Layer -->
+          <g id="layer-icons" data-layer="icons"></g>
+          <!-- Labels & Text Layer -->
+          <g id="layer-labels" data-layer="labels"></g>
+          <!-- Selection / Temp Layer -->
+          <g id="layer-selection"></g>
+        </g>
+
+        <!-- Crosshair / cursor indicator -->
+        <g id="cursor-indicator" style="pointer-events:none; display:none;">
+          <line id="ci-h" stroke="#4A9EFF" stroke-width="1" opacity="0.5" x1="0" y1="0" x2="0" y2="0" />
+          <line id="ci-v" stroke="#4A9EFF" stroke-width="1" opacity="0.5" x1="0" y1="0" x2="0" y2="0" />
+          <circle id="ci-dot" r="3" fill="#4A9EFF" opacity="0.8" cx="0" cy="0" />
+        </g>
+      </svg>
+
+      <!-- Selection Rubber-Band (HTML overlay) -->
+      <div id="rubber-band" class="rubber-band" style="display:none;"></div>
+
+      <!-- Canvas tooltip -->
+      <div id="canvas-tooltip" class="canvas-tooltip" style="display:none;"></div>
+    </main>
+
+    <!-- Right Property Panel -->
+    <aside id="property-panel" role="complementary" aria-label="屬性面板">
+      <div class="panel-header">
+        <h2 class="panel-title">屬性</h2>
+        <button class="btn-icon panel-collapse-btn" id="btn-collapse-props" title="收合面板" aria-label="收合屬性面板">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
+        </button>
+      </div>
+      <div id="property-content">
+        <!-- Dynamic content injected by propertyPanel.js -->
+        <div id="prop-empty" class="prop-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            opacity="0.3">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <line x1="3" y1="9" x2="21" y2="9" />
+            <line x1="9" y1="21" x2="9" y2="9" />
+          </svg>
+          <p>選取物件以查看屬性</p>
+        </div>
+        <!-- Station properties (hidden by default) -->
+        <div id="prop-station" class="prop-section" style="display:none;">
+          <div class="prop-group">
+            <label class="prop-label">車站名稱</label>
+            <input type="text" id="prop-station-name" class="prop-input" placeholder="台北車站" />
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">英文名稱</label>
+            <input type="text" id="prop-station-en" class="prop-input" placeholder="Taipei Main Station" />
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">站碼</label>
+            <input type="text" id="prop-station-code" class="prop-input" placeholder="BL12" />
+          </div>
+          <div class="prop-sep"></div>
+          <div class="prop-group">
+            <label class="prop-label">樣式</label>
+            <div class="prop-row">
+              <select id="prop-station-shape" class="prop-select">
+                <option value="circle">圓形</option>
+                <option value="rect">方形</option>
+                <option value="diamond">菱形</option>
+                <option value="transfer">轉乘站</option>
+              </select>
+            </div>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">大小</label>
+            <div class="prop-row">
+              <input type="range" id="prop-station-size" class="prop-slider" min="4" max="30" value="10" />
+              <input type="number" id="prop-station-size-num" class="prop-input prop-num" value="10" min="4" max="30" />
+            </div>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">填色</label>
+            <div class="prop-row">
+              <input type="color" id="prop-station-fill" class="prop-color" value="#FFFFFF" />
+              <input type="text" id="prop-station-fill-hex" class="prop-input prop-hex" value="#FFFFFF" />
+            </div>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">框線顏色</label>
+            <div class="prop-row">
+              <input type="color" id="prop-station-stroke" class="prop-color" value="#0070BD" />
+              <input type="text" id="prop-station-stroke-hex" class="prop-input prop-hex" value="#0070BD" />
+            </div>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">框線寬度</label>
+            <div class="prop-row">
+              <input type="range" id="prop-station-sw" class="prop-slider" min="1" max="10" value="3" />
+              <input type="number" id="prop-station-sw-num" class="prop-input prop-num" value="3" min="1" max="10" />
+            </div>
+          </div>
+          <div class="prop-sep"></div>
+          <div class="prop-group">
+            <label class="prop-label">位置</label>
+            <div class="prop-row">
+              <label class="prop-sublabel">X</label>
+              <input type="number" id="prop-station-x" class="prop-input prop-coord" />
+              <label class="prop-sublabel">Y</label>
+              <input type="number" id="prop-station-y" class="prop-input prop-coord" />
+            </div>
+          </div>
+          <div class="prop-sep"></div>
+          <div class="prop-group prop-row-btns">
+            <button class="btn-danger-sm" id="prop-station-delete">刪除車站</button>
+          </div>
+        </div>
+        <!-- Line properties -->
+        <div id="prop-line" class="prop-section" style="display:none;">
+          <div class="prop-group">
+            <label class="prop-label">路線名稱</label>
+            <input type="text" id="prop-line-name" class="prop-input" placeholder="板南線" />
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">路線代碼</label>
+            <input type="text" id="prop-line-code" class="prop-input" placeholder="BL" />
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">路線顏色</label>
+            <div class="prop-row">
+              <input type="color" id="prop-line-color" class="prop-color" value="#0070BD" />
+              <input type="text" id="prop-line-color-hex" class="prop-input prop-hex" value="#0070BD" />
+            </div>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">線條寬度</label>
+            <div class="prop-row">
+              <input type="range" id="prop-line-width" class="prop-slider" min="2" max="20" value="8" />
+              <input type="number" id="prop-line-width-num" class="prop-input prop-num" value="8" min="2" max="20" />
+            </div>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">路由模式</label>
+            <select id="prop-line-routing" class="prop-select">
+              <option value="straight">直線</option>
+              <option value="45deg" selected>45 度折線</option>
+              <option value="90deg">90 度折線</option>
+              <option value="bezier">轉折曲線</option>
+            </select>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">線條樣式</label>
+            <select id="prop-line-style" class="prop-select">
+              <option value="solid">實線</option>
+              <option value="dashed">虛線</option>
+              <option value="dotted">點線</option>
+              <option value="dash-dot">虛點線</option>
+              <option value="double">雙線</option>
+            </select>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">不透明度</label>
+            <div class="prop-row">
+              <input type="range" id="prop-line-opacity" class="prop-slider" min="0" max="100" value="100" />
+              <input type="number" id="prop-line-opacity-num" class="prop-input prop-num" value="100" min="0"
+                max="100" />
+            </div>
+          </div>
+          <div class="prop-sep"></div>
+          <div class="prop-group prop-row-btns">
+            <button class="btn-danger-sm" id="prop-line-delete">刪除路線</button>
+          </div>
+        </div>
+        <!-- Text properties -->
+        <div id="prop-text" class="prop-section" style="display:none;">
+          <div class="prop-group">
+            <label class="prop-label">文字內容</label>
+            <textarea id="prop-text-content" class="prop-textarea" rows="3"></textarea>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">字型</label>
+            <select id="prop-text-font" class="prop-select">
+              <option value="'Noto Sans TC', sans-serif">Noto Sans TC</option>
+              <option value="'Inter', sans-serif">Inter</option>
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="Georgia, serif">Georgia</option>
+            </select>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">字號 / 粗細</label>
+            <div class="prop-row">
+              <input type="number" id="prop-text-size" class="prop-input prop-num" value="14" min="6" max="200" />
+              <select id="prop-text-weight" class="prop-select" style="flex:1">
+                <option value="300">Light</option>
+                <option value="400" selected>Regular</option>
+                <option value="500">Medium</option>
+                <option value="700">Bold</option>
+              </select>
+            </div>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">顏色</label>
+            <div class="prop-row">
+              <input type="color" id="prop-text-color" class="prop-color" value="#FFFFFF" />
+              <input type="text" id="prop-text-color-hex" class="prop-input prop-hex" value="#FFFFFF" />
+            </div>
+          </div>
+          <div class="prop-group">
+            <label class="prop-label">旋轉角度</label>
+            <div class="prop-row">
+              <input type="range" id="prop-text-rotate" class="prop-slider" min="-180" max="180" value="0" />
+              <input type="number" id="prop-text-rotate-num" class="prop-input prop-num" value="0" min="-180"
+                max="180" />
+            </div>
+          </div>
+          <div class="prop-sep"></div>
+          <div class="prop-group prop-row-btns">
+            <button class="btn-danger-sm" id="prop-text-delete">刪除文字</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layers Section -->
+      <div class="panel-header" style="margin-top:8px;">
+        <h2 class="panel-title">圖層</h2>
+      </div>
+      <div id="layer-list" class="layer-list">
+        <div class="layer-item" data-layer="labels">
+          <span class="layer-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6h16M4 10h16M4 14h10" />
+            </svg>
+          </span>
+          <span class="layer-name">文字標籤</span>
+          <button class="layer-vis-btn" data-layer="labels" title="切換可見度" aria-label="切換文字標籤可見度">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+        <div class="layer-item" data-layer="icons">
+          <span class="layer-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+              <circle cx="12" cy="9" r="2.5" />
+            </svg>
+          </span>
+          <span class="layer-name">圖示標記</span>
+          <button class="layer-vis-btn" data-layer="icons" title="切換可見度" aria-label="切換圖示標記可見度">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+        <div class="layer-item" data-layer="stations">
+          <span class="layer-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="7" />
+              <circle cx="12" cy="12" r="3" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="layer-name">車站</span>
+          <button class="layer-vis-btn" data-layer="stations" title="切換可見度" aria-label="切換車站可見度">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+        <div class="layer-item" data-layer="lines">
+          <span class="layer-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="4" cy="12" r="2" fill="currentColor" />
+              <line x1="6" y1="12" x2="18" y2="12" />
+              <circle cx="20" cy="12" r="2" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="layer-name">捷運路線</span>
+          <button class="layer-vis-btn" data-layer="lines" title="切換可見度" aria-label="切換捷運路線可見度">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Status Bar -->
+  <footer id="status-bar" role="contentinfo">
+    <div class="status-left">
+      <span class="status-item" id="status-tool">工具：選取</span>
+      <span class="status-sep">|</span>
+      <span class="status-item" id="status-objects">物件：0</span>
+      <span class="status-sep">|</span>
+      <span class="status-item" id="status-selected">已選：0</span>
+    </div>
+    <div class="status-center">
+      <span class="status-item" id="status-coords">X: 0 &nbsp; Y: 0</span>
+    </div>
+    <div class="status-right">
+      <button class="status-zoom-btn" id="status-zoom-out-btn" aria-label="縮小">−</button>
+      <span class="status-item" id="status-zoom">100%</span>
+      <button class="status-zoom-btn" id="status-zoom-in-btn" aria-label="放大">+</button>
+    </div>
+  </footer>
+
+  <!-- Modals -->
+  <div id="modal-overlay" class="modal-overlay" style="display:none;">
+    <!-- Export Modal -->
+    <div id="modal-export" class="modal" style="display:none;" role="dialog" aria-modal="true"
+      aria-labelledby="modal-export-title">
+      <div class="modal-header">
+        <h3 id="modal-export-title">匯出設定</h3>
+        <button class="modal-close" id="modal-export-close" aria-label="關閉">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="prop-group">
+          <label class="prop-label">匯出範圍</label>
+          <select id="export-area" class="prop-select">
+            <option value="canvas">畫布全區</option>
+            <option value="content">僅內容區域</option>
+            <option value="selection">僅選取物件</option>
+          </select>
+        </div>
+        <div class="prop-group">
+          <label class="prop-label">格式</label>
+          <select id="export-format" class="prop-select">
+            <option value="svg">SVG</option>
+            <option value="png" selected>PNG</option>
+            <option value="webp">WebP</option>
+            <option value="pdf">PDF</option>
+            <option value="json">JSON (.metro)</option>
+          </select>
+        </div>
+        <div id="export-resolution-group" class="prop-group">
+          <label class="prop-label">解析度</label>
+          <select id="export-resolution" class="prop-select">
+            <option value="1">1× (原始)</option>
+            <option value="2" selected>2× (推薦)</option>
+            <option value="4">4× (高解析)</option>
+          </select>
+        </div>
+        <div id="export-quality-group" class="prop-group">
+          <label class="prop-label">品質</label>
+          <div class="prop-row">
+            <input type="range" id="export-quality" class="prop-slider" min="50" max="100" value="92" />
+            <span id="export-quality-val" class="prop-num-display">92</span>
+          </div>
+        </div>
+        <div class="prop-group">
+          <label class="prop-label">透明背景</label>
+          <input type="checkbox" id="export-transparent" class="prop-checkbox" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="modal-export-cancel">取消</button>
+        <button class="btn-primary" id="modal-export-confirm">開始匯出</button>
+      </div>
+    </div>
+
+
+    <!-- About Modal -->
+    <div id="modal-about" class="modal" style="display:none;" role="dialog" aria-modal="true"
+      aria-labelledby="modal-about-title">
+      <div class="modal-header">
+        <h3 id="modal-about-title">關於</h3>
+        <button class="modal-close"
+          onclick="document.getElementById('modal-overlay').style.display='none'; document.getElementById('modal-about').style.display='none';"
+          aria-label="關閉">✕</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 32px 24px;">
+        <div
+          style="width: 64px; height: 64px; margin: 0 auto 20px; border-radius: 16px; background: var(--bg-base); box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-soft);">
+          <img src="assets/icon.png" width="40" height="40" alt="logo" />
+        </div>
+        <h4
+          style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.02em;">
+          NFDesigner</h4>
+        <div
+          style="display: inline-block; padding: 4px 10px; border-radius: 20px; background: var(--accent-dim); color: var(--accent); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 20px;">
+          by NetFormosa</div>
+        <p
+          style="font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); padding: 16px; background: var(--bg-base); border-radius: 12px; border: 1px solid var(--border-soft); text-align: left; margin: 0 auto; max-width: 320px;">
+          專業的捷運路線圖視覺化設計工具。<br /><br />
+          支援高自由度的路線繪製、車站編輯、雙語標籤，並可套用自訂樣式與多格式匯出 (SVG / PNG / WebP / PDF)。
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary"
+          onclick="document.getElementById('modal-overlay').style.display='none'; document.getElementById('modal-about').style.display='none';">確定</button>
+      </div>
+    </div>
+
+
+    <!-- Context Menu -->
+    <ul id="context-menu" class="context-menu" role="menu" style="display:none;">
+      <li class="ctx-item" id="ctx-copy" role="menuitem">複製</li>
+      <li class="ctx-item" id="ctx-paste" role="menuitem">貼上</li>
+      <li class="ctx-sep" role="separator"></li>
+      <li class="ctx-item" id="ctx-to-front" role="menuitem">移至最前</li>
+      <li class="ctx-item" id="ctx-to-back" role="menuitem">移至最後</li>
+      <li class="ctx-sep" role="separator"></li>
+      <li class="ctx-item" id="ctx-group" role="menuitem">群組</li>
+      <li class="ctx-item" id="ctx-lock" role="menuitem">鎖定</li>
+      <li class="ctx-sep" role="separator"></li>
+      <li class="ctx-item ctx-danger" id="ctx-delete" role="menuitem">刪除</li>
+    </ul>
+
+    <!-- ═══════════════════════════════════════════════
+         MOBILE UI LAYER
+         ═══════════════════════════════════════════════ -->
+
+    <!-- Mobile Top Bar -->
+    <header id="mobile-topbar" aria-label="手機版頂部工具列">
+      <div class="mob-topbar-left">
+        <button class="mob-topbar-btn" id="mob-btn-menu" aria-label="主選單">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <div class="mob-logo">
+          <img src="assets/icon.png" width="18" height="18" alt="logo" />
+          <span class="mob-logo-name">NFDesigner</span>
+        </div>
+      </div>
+      <div class="mob-topbar-center">
+        <span id="mob-project-name" class="mob-project-name">未命名專案</span>
+      </div>
+      <div class="mob-topbar-right">
+        <button class="mob-topbar-btn" id="mob-btn-undo" aria-label="復原">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7v6h6" />
+            <path d="M3 13a9 9 0 1 0 2.1-5.4" />
+          </svg>
+        </button>
+        <button class="mob-topbar-btn" id="mob-btn-redo" aria-label="重做">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 7v6h-6" />
+            <path d="M21 13a9 9 0 1 1-2.1-5.4" />
+          </svg>
+        </button>
+        <button class="mob-topbar-btn mob-btn-save" id="mob-btn-save" aria-label="儲存">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17,21 17,13 7,13 7,21" />
+            <polyline points="7,3 7,8 15,8" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Tool Picker (horizontal scroll) -->
+    <div id="mobile-tool-strip" role="toolbar" aria-label="手機版工具列">
+      <button class="mob-tool active" id="mob-tool-select" data-tool="select" aria-label="選取">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M4 2l16 9-9 2-5 8z" />
+        </svg>
+        <span>選取</span>
+      </button>
+      <button class="mob-tool" id="mob-tool-station" data-tool="station" aria-label="車站">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="7" />
+          <circle cx="12" cy="12" r="3" fill="currentColor" />
+        </svg>
+        <span>車站</span>
+      </button>
+      <button class="mob-tool" id="mob-tool-line" data-tool="line" aria-label="路線">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="4" cy="12" r="2.5" fill="currentColor" />
+          <circle cx="20" cy="12" r="2.5" fill="currentColor" />
+          <line x1="6.5" y1="12" x2="17.5" y2="12" />
+        </svg>
+        <span>路線</span>
+      </button>
+      <button class="mob-tool" id="mob-tool-text" data-tool="text" aria-label="文字">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M4 6V4h16v2h-6v14h-4V6z" />
+        </svg>
+        <span>文字</span>
+      </button>
+      <button class="mob-tool" id="mob-tool-pan" data-tool="pan" aria-label="平移">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <span>平移</span>
+      </button>
+      <div class="mob-tool-sep"></div>
+      <button class="mob-tool" id="mob-tool-zoom-in" aria-label="放大">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <line x1="11" y1="8" x2="11" y2="14" />
+          <line x1="8" y1="11" x2="14" y2="11" />
+        </svg>
+        <span>放大</span>
+      </button>
+      <button class="mob-tool" id="mob-tool-zoom-out" aria-label="縮小">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <line x1="8" y1="11" x2="14" y2="11" />
+        </svg>
+        <span>縮小</span>
+      </button>
+      <button class="mob-tool" id="mob-tool-fit" aria-label="符合視窗">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7V3h4M17 3h4v4M3 17v4h4M17 21h4v-4" />
+          <rect x="7" y="7" width="10" height="10" rx="1" />
+        </svg>
+        <span>符合</span>
+      </button>
+    </div>
+
+    
+
+    <script type="module" src="src/main.js?v=2"></script>
+    <script>
+      // ── Mobile UI controller (inline) ──────────────────────────
+      (function () {
+        const isMobile = () => window.innerWidth <= 768;
+
+        // ── Drawer system ──
+        const drawers = {
+          props: document.getElementById('mob-drawer-props'),
+          layers: document.getElementById('mob-drawer-layers'),
+          more: document.getElementById('mob-drawer-more'),
+          menu: document.getElementById('mob-drawer-menu'),
+        };
+        const backdrop = document.getElementById('mob-drawer-backdrop');
+        let activeDrawer = null;
+
+        function openDrawer(name) {
+          closeDrawer();
+          const el = drawers[name];
+          if (!el) return;
+          el.classList.add('open');
+          backdrop.classList.add('active');
+          activeDrawer = name;
+        }
+        function closeDrawer() {
+          Object.values(drawers).forEach(d => d && d.classList.remove('open'));
+          backdrop.classList.remove('active');
+          activeDrawer = null;
+        }
+
+        backdrop.addEventListener('click', closeDrawer);
+        document.getElementById('mob-props-close').addEventListener('click', closeDrawer);
+        document.getElementById('mob-layers-close').addEventListener('click', closeDrawer);
+        document.getElementById('mob-more-close').addEventListener('click', closeDrawer);
+        document.getElementById('mob-menu-close').addEventListener('click', closeDrawer);
+
+        // ── Bottom nav ──
+        document.querySelectorAll('.mob-nav-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const panel = btn.dataset.panel;
+            document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (panel === 'none') { closeDrawer(); return; }
+            if (panel === 'manage') {
+              closeDrawer();
+              // trigger existing manager panel open
+              const existing = document.getElementById('mob-btn-menu');
+              document.getElementById('btn-open-manager') && document.getElementById('btn-open-manager').click();
+              return;
+            }
+            if (activeDrawer === panel) { closeDrawer(); return; }
+            openDrawer(panel);
+          });
+        });
+
+        // ── Hamburger menu ──
+        document.getElementById('mob-btn-menu').addEventListener('click', () => openDrawer('menu'));
+
+        // ── Tool strip ──
+        document.querySelectorAll('.mob-tool[data-tool]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tool = btn.dataset.tool;
+            document.querySelectorAll('.mob-tool[data-tool]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // sync with desktop toolbar
+            const deskBtn = document.getElementById('tool-' + tool);
+            if (deskBtn) deskBtn.click();
+          });
+        });
+        document.getElementById('mob-tool-zoom-in').addEventListener('click', () => {
+          document.getElementById('tool-zoom-in') && document.getElementById('tool-zoom-in').click();
+        });
+        document.getElementById('mob-tool-zoom-out').addEventListener('click', () => {
+          document.getElementById('tool-zoom-out') && document.getElementById('tool-zoom-out').click();
+        });
+        document.getElementById('mob-tool-fit').addEventListener('click', () => {
+          document.getElementById('btn-zoom-fit-tool') && document.getElementById('btn-zoom-fit-tool').click();
+        });
+
+        // ── Mobile top bar actions ──
+        document.getElementById('mob-btn-undo').addEventListener('click', () =>
+          document.getElementById('btn-undo').click());
+        document.getElementById('mob-btn-redo').addEventListener('click', () =>
+          document.getElementById('btn-redo').click());
+        document.getElementById('mob-btn-save').addEventListener('click', () =>
+          document.getElementById('btn-save').click());
+
+        // ── More drawer actions ──
+        const moreMap = {
+          'mob-more-undo': 'dd-undo',
+          'mob-more-redo': 'dd-redo',
+          'mob-more-copy': 'dd-copy',
+          'mob-more-paste': 'dd-paste',
+          'mob-more-delete': 'dd-delete',
+          'mob-more-grid': 'dd-toggle-grid',
+          'mob-more-snap': 'dd-toggle-snap-grid',
+          'mob-more-fit': 'dd-zoom-fit',
+          'mob-more-export-png': 'dd-export-png',
+          'mob-more-export-svg': 'dd-export-svg',
+          'mob-more-export-pdf': 'dd-export-pdf',
+          'mob-more-export-webp': 'dd-export-webp',
+          'mob-more-export-json': 'dd-export-json',
+        };
+        Object.entries(moreMap).forEach(([mobId, deskId]) => {
+          const el = document.getElementById(mobId);
+          if (el) el.addEventListener('click', () => {
+            closeDrawer();
+            // Replicate via existing desktop handlers
+            const desk = document.getElementById(deskId);
+            if (desk) { desk.click(); }
+          });
+        });
+        document.getElementById('mob-dd-toggle-grid')?.addEventListener('click', () => {
+          document.getElementById('dd-toggle-grid')?.click();
+          closeDrawer();
+        });
+        document.getElementById('mob-dd-zoom-fit')?.addEventListener('click', () => {
+          document.getElementById('dd-zoom-fit')?.click();
+          closeDrawer();
+        });
+
+        // ── Zoom strip ──
+        document.getElementById('mob-zoom-in')?.addEventListener('click', () => {
+          document.getElementById('tool-zoom-in')?.click();
+          syncZoomLabel();
+        });
+        document.getElementById('mob-zoom-out')?.addEventListener('click', () => {
+          document.getElementById('tool-zoom-out')?.click();
+          syncZoomLabel();
+        });
+        
+        // Handle zoom bar dragging
+        const mobZoomTrack = document.querySelector('.mob-zoom-bar-track');
+        if (mobZoomTrack) {
+          const updateZoomFromEvent = (e) => {
+            if (!window._appCanvas) return;
+            const rect = mobZoomTrack.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            // mapping 0 to 1 -> 0.1 to 4.0 scale roughly (400% max)
+            const scale = 0.1 + (pct * 3.9);
+            window._appCanvas.setZoom(scale);
+            syncZoomLabel();
+          };
+          
+          let isDraggingZoom = false;
+          mobZoomTrack.addEventListener('mousedown', (e) => { isDraggingZoom = true; updateZoomFromEvent(e); });
+          mobZoomTrack.addEventListener('touchstart', (e) => { isDraggingZoom = true; updateZoomFromEvent(e); }, {passive: true});
+          window.addEventListener('mousemove', (e) => { if (isDraggingZoom) updateZoomFromEvent(e); });
+          window.addEventListener('touchmove', (e) => { if (isDraggingZoom) updateZoomFromEvent(e); }, {passive: true});
+          window.addEventListener('mouseup', () => isDraggingZoom = false);
+          window.addEventListener('touchend', () => isDraggingZoom = false);
+        }
+        function syncZoomLabel() {
+          setTimeout(() => {
+            const val = document.getElementById('status-zoom')?.textContent || '';
+            document.getElementById('mob-zoom-label').textContent = val;
+            const pct = parseInt(val) || 100;
+            const fill = Math.min(Math.max((pct / 400) * 100, 5), 95);
+            const bar = document.getElementById('mob-zoom-fill');
+            if (bar) bar.style.width = fill + '%';
+          }, 80);
+        }
+        // Observe zoom changes
+        const zoomObs = new MutationObserver(syncZoomLabel);
+        const zoomEl = document.getElementById('status-zoom');
+        if (zoomEl) zoomObs.observe(zoomEl, { childList: true, characterData: true, subtree: true });
+
+        // ── Observe Grid & Snap to highlight toggles in More drawer ──
+        const toggleObs = new MutationObserver(() => {
+          const gridHidden = document.getElementById('grid-check')?.classList.contains('hidden');
+          const snapHidden = document.getElementById('snap-grid-check')?.classList.contains('hidden');
+          
+          const mobGrid = document.getElementById('mob-more-grid');
+          if (mobGrid) mobGrid.classList.toggle('active', !gridHidden);
+          
+          const mobSnap = document.getElementById('mob-more-snap');
+          if (mobSnap) mobSnap.classList.toggle('active', !snapHidden);
+        });
+        const gridCheck = document.getElementById('grid-check');
+        const snapCheck = document.getElementById('snap-grid-check');
+        if (gridCheck) toggleObs.observe(gridCheck, { attributes: true, attributeFilter: ['class'] });
+        if (snapCheck) toggleObs.observe(snapCheck, { attributes: true, attributeFilter: ['class'] });
+        
+        // initial sync
+        setTimeout(() => {
+            if (gridCheck && document.getElementById('mob-more-grid')) {
+                document.getElementById('mob-more-grid').classList.toggle('active', !gridCheck.classList.contains('hidden'));
+            }
+            if (snapCheck && document.getElementById('mob-more-snap')) {
+                document.getElementById('mob-more-snap').classList.toggle('active', !snapCheck.classList.contains('hidden'));
+            }
+        }, 500);
+
+        // ── Menu drawer actions ──
+        const menuActionMap = {
+          'mob-menu-new': 'dd-new',
+          'mob-menu-open': 'dd-open',
+          'mob-menu-save-as': 'dd-save-as',
+          'mob-menu-export': 'btn-export-quick',
+          'mob-menu-about': 'dd-about',
+        };
+        Object.entries(menuActionMap).forEach(([mobId, deskId]) => {
+          const el = document.getElementById(mobId);
+          if (el) el.addEventListener('click', () => {
+            closeDrawer();
+            const desk = document.getElementById(deskId);
+            if (desk) desk.click();
+          });
+        });
+        document.getElementById('mob-menu-manage')?.addEventListener('click', () => {
+          closeDrawer();
+          document.getElementById('btn-open-manager')?.click();
+        });
+        document.getElementById('mob-menu-github')?.addEventListener('click', () => {
+          closeDrawer();
+          window.open('https://github.com/NetFormosa/NFDesigner', '_blank');
+        });
+
+        // ── Theme chips ──
+        document.querySelectorAll('.mob-theme-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            const theme = chip.dataset.theme;
+            const deskBtn = document.getElementById(`dd-theme-${theme}`);
+            if (deskBtn) deskBtn.click();
+            document.querySelectorAll('.mob-theme-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+          });
+        });
+
+        // ── Layer vis buttons ──
+        document.querySelectorAll('.mob-layer-vis').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const layer = btn.dataset.layer;
+            const deskBtn = document.querySelector(`#layer-list .layer-vis-btn[data-layer="${layer}"]`);
+            if (deskBtn) deskBtn.click();
+            btn.classList.toggle('hidden');
+          });
+        });
+
+        // ── Sync project name ──
+        const projObs = new MutationObserver(() => {
+          const txt = document.getElementById('project-name-display')?.textContent || '';
+          const mobProj = document.getElementById('mob-project-name');
+          const menuProj = document.getElementById('mob-menu-proj-name');
+          if (mobProj) mobProj.textContent = txt;
+          if (menuProj) menuProj.textContent = txt;
+        });
+        const projEl = document.getElementById('project-name-display');
+        if (projEl) projObs.observe(projEl, { childList: true, characterData: true, subtree: true });
+
+        // ── Observe property panel changes → mirror to mobile props drawer ──
+        function syncMobProps() {
+          const src = document.getElementById('property-content');
+          const dst = document.getElementById('mob-props-body');
+          if (!src || !dst || !isMobile()) return;
+          // Only mirror if something is selected (not empty state)
+          const isEmpty = document.getElementById('prop-empty')?.style.display !== 'none';
+          if (isEmpty || document.getElementById('prop-empty')?.style.display === '') {
+            dst.innerHTML = `<div class="mob-drawer-mirror-notice"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg><p>請在畫布上選取物件</p></div>`;
+          } else {
+            dst.innerHTML = src.innerHTML;
+            // Re-bind input events
+            dst.querySelectorAll('input, select, textarea').forEach(el => {
+              el.addEventListener('change', (e) => {
+                const src_el = document.getElementById(el.id);
+                if (src_el && src_el !== el) {
+                  src_el.value = el.value;
+                  src_el.dispatchEvent(new Event('change', { bubbles: true }));
+                  src_el.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+              });
+            });
+          }
+        }
+        const propObs = new MutationObserver(syncMobProps);
+        const propSrc = document.getElementById('property-content');
+        if (propSrc) propObs.observe(propSrc, { childList: true, subtree: true, attributes: true });
+
+        console.log('[Mobile UI] Initialised');
+      })();
+    </script>
+</body>
+
+</html>
